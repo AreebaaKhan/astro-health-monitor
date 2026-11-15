@@ -33,3 +33,4 @@ Review README documentation, record 30-second demo walkthrough, and finalize Spa
 - 2026-11-15: Folder, git repo and docs created. Plan changed to clock-time schedule.
 - 2026-11-15: App code v1 added. Docs updated for 30 second demo and NASA resource rule.
 - 2026-11-15: Fixed Next.js build errors (offline font requests, PostCSS, React 19 external store). Upgraded UI into dark aerospace telemetry HUD with interactive body figure, scrub controls, and validation panel. Validation proves 8.2 days earlier detection on average.
+- 2026-11-15: Packaged clean project archive (astro-health-monitor.zip) excluding node_modules and build artifacts for easy download and distribution.
