@@ -14,27 +14,27 @@ Deadline: 15 Nov 2026, 11:59 PM. Work started about 3:15 PM. Target submit by 10
 - 10:00 to 10:45 PM Buffer, final check, SUBMIT
 
 ## Phase 0: Setup
-- [ ] Scaffold Next.js app (TypeScript, Tailwind, App Router)
-- [ ] Install recharts
+- [x] Scaffold Next.js app (TypeScript, Tailwind, App Router)
+- [x] Install recharts
 - [ ] Push to GitHub, deploy empty app on Vercel
 
 ## Phase 1: Data and logic
-- [ ] types.ts: Indicator, Reading, Status, Alert
-- [ ] ranges.ts: normal and caution ranges per indicator, with sources in comments
-- [ ] simulator.ts: mission timeline (about 180 days) with 2 or 3 injected drifts
-- [ ] anomaly.ts: rolling baseline, EWMA or z-score, returns flags and a short reason
-- [ ] validate.ts: compare baseline method vs fixed thresholds (days earlier, false alarms)
+- [x] types.ts: Indicator, Reading, Status, Alert
+- [x] ranges.ts: normal and caution ranges per indicator, with sources in comments
+- [x] simulator.ts: mission timeline (about 180 days) with 2 or 3 injected drifts
+- [x] anomaly.ts: rolling baseline, EWMA or z-score, returns flags and a short reason
+- [x] validate.ts: compare baseline method vs fixed thresholds (days earlier, false alarms)
 
 ## Phase 2: Dashboard and alerts
-- [ ] Indicator cards with color status
-- [ ] Trend charts with anomaly markers
-- [ ] Mission day slider (this is the demo mode)
-- [ ] Alert panel: what changed, why, what to do, when to escalate
-- [ ] Simple check-in form (can be last, keep it small)
+- [x] Indicator cards with color status
+- [x] Trend charts with anomaly markers
+- [x] Mission day slider (this is the demo mode)
+- [x] Alert panel: what changed, why, what to do, when to escalate
+- [x] Simple check-in form (can be last, keep it small)
 
 ## Phase 3: Body figure
-- [ ] Simple SVG body, clickable regions
-- [ ] Per region: indicator, hazard link, plain explanation
+- [x] Simple SVG body, clickable regions
+- [x] Per region: indicator, hazard link, plain explanation
 
 ## Phase 4: README and polish
 - [ ] Layout readable on a laptop screen

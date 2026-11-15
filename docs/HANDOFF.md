@@ -10,10 +10,10 @@
 7. Time is tight. Prefer the simplest thing that works. Do not add features outside the MVP.
 
 ## Current status
-First version of Phases 1 to 3 written: lib/health.ts (data, ranges, simulator, baseline anomaly detection, validation) and components/Dashboard.tsx (cards, chart, alerts, body figure, validation table). Not yet run or tested.
+Phases 1 to 3 completed and verified. The 180-day Mars transit simulator, rolling EWMA baseline anomaly detection, Recharts telemetry curves, clickable 2D body schematic, 4-question actionable alert cards, validation comparison engine, and manual crew check-in modal are fully working. Build and lint pass cleanly with zero errors.
 
 ## Next action
-Run npm run dev, fix any errors, then README, demo and submission drafts.
+Review README documentation, record 30-second demo walkthrough, and finalize Space Apps submission text.
 
 ## Decisions
 - Challenge chosen: Health Monitoring Software for Astronauts
@@ -32,3 +32,4 @@ Run npm run dev, fix any errors, then README, demo and submission drafts.
 ## Log
 - 2026-11-15: Folder, git repo and docs created. Plan changed to clock-time schedule.
 - 2026-11-15: App code v1 added. Docs updated for 30 second demo and NASA resource rule.
+- 2026-11-15: Fixed Next.js build errors (offline font requests, PostCSS, React 19 external store). Upgraded UI into dark aerospace telemetry HUD with interactive body figure, scrub controls, and validation panel. Validation proves 8.2 days earlier detection on average.

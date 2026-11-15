@@ -1,47 +1,183 @@
-// Demo health logic. All data is SIMULATED. Ranges are demo values for a healthy adult, not medical advice.
+// Health logic for the Astronaut Health Monitor.
+// All mission data is SIMULATED. Ranges are demo values for a healthy adult, not medical advice.
+// Logic in /lib with no UI code.
+
 export type Key = "hr" | "bp" | "glucose" | "temp" | "sleep" | "mood";
 export type Status = "ok" | "watch" | "alert";
 export type Day = Record<Key, number> & { day: number };
 
 export const KEYS: Key[] = ["hr", "bp", "glucose", "temp", "sleep", "mood"];
-export const CAL = 14; // days used to learn the astronaut's own baseline
-export const ALPHA = 0.3; // EWMA smoothing
-export const Z_LIMIT = 1.5; // smoothed z-score limit for a drift flag
+export const MISSION_DAYS = 180; // simulated Mars transit
+export const CAL = 14; // calibration period in days used to learn the astronaut's own baseline
+export const ALPHA = 0.25; // EWMA smoothing weight
+export const BASE_RATE = 0.005; // slow baseline adaptation rate during quiet nominal days
+export const Z_LIMIT = 1.2; // smoothed z-score threshold for caution drift (Watch)
+export const Z_ALERT = 3.5; // smoothed z-score threshold for critical alert (Alert)
 
-type Info = {
-  label: string; unit: string;
-  lo: number; hi: number; // normal range
-  alo: number; ahi: number; // alert limits
-  sd: number; // typical day to day variation
-  hazard: string; why: string; action: string;
+export type Info = {
+  label: string;
+  short: string;
+  unit: string;
+  dp: number;
+  base: number; // typical healthy baseline for this astronaut
+  lo: number;
+  hi: number; // population normal reference range
+  alo: number;
+  ahi: number; // population alert limits
+  sd: number; // typical day to day physiological variance
+  hazard: string;
+  why: string;
+  action: string;
 };
 
 export const I: Record<Key, Info> = {
-  hr: { label: "Heart rate", unit: "bpm", lo: 55, hi: 95, alo: 45, ahi: 110, sd: 3, hazard: "Gravity fields",
-    why: "Long periods in microgravity change how the heart and blood vessels work, so a rising resting heart rate can be an early sign of strain.",
-    action: "Rest, drink water and measure again after 10 minutes. Keep the planned exercise session." },
-  bp: { label: "Blood pressure (systolic)", unit: "mmHg", lo: 95, hi: 125, alo: 85, ahi: 145, sd: 4, hazard: "Gravity fields",
-    why: "Fluid shifts in space can change blood pressure, and a pressure that stays high raises cardiovascular risk.",
-    action: "Sit calmly for 5 minutes and measure again. Review salt intake and exercise." },
-  glucose: { label: "Blood sugar", unit: "mg/dL", lo: 70, hi: 110, alo: 60, ahi: 140, sd: 5, hazard: "Closed environment and limited supplies",
-    why: "Food choices are limited in a closed spacecraft and stress can change blood sugar.",
-    action: "Check meal timing and food type, then measure again." },
-  temp: { label: "Body temperature", unit: "C", lo: 36.1, hi: 37.2, alo: 35.5, ahi: 38, sd: 0.15, hazard: "Hostile and closed environment",
-    why: "Cabin temperature and illness both change body temperature, and the immune system can behave differently in space.",
-    action: "Check cabin temperature and clothing, rest, and measure again in an hour." },
-  sleep: { label: "Sleep", unit: "hours", lo: 6.5, hi: 9, alo: 4.5, ahi: 11, sd: 0.5, hazard: "Isolation and confinement",
-    why: "Lighting, noise and a fixed routine in a small space can cut sleep, which affects mood and performance.",
-    action: "Keep a fixed sleep time, dim the lights before bed and reduce noise." },
-  mood: { label: "Mood (1 to 10)", unit: "/10", lo: 6, hi: 10, alo: 3.5, ahi: 11, sd: 0.6, hazard: "Isolation and confinement",
-    why: "Long isolation far from home can lower mood over time. Early support helps.",
-    action: "Talk to a crewmate or book a call with ground support. Take a short break." },
+  hr: {
+    label: "Heart rate",
+    short: "HR",
+    unit: "bpm",
+    dp: 0,
+    base: 68,
+    lo: 55,
+    hi: 95,
+    alo: 45,
+    ahi: 110,
+    sd: 3,
+    hazard: "Gravity fields",
+    why: "Long periods in microgravity cause cephalad fluid shifts and cardiovascular deconditioning. A rising resting pulse indicates autonomic strain before clinical tachycardia appears.",
+    action: "Rest, hydrate with electrolyte solution, and repeat measurement after 10 minutes. Ensure daily prescribed aerobic exercise on the cycle ergometer is completed.",
+  },
+  bp: {
+    label: "Blood pressure (systolic)",
+    short: "BP",
+    unit: "mmHg",
+    dp: 0,
+    base: 112,
+    lo: 95,
+    hi: 125,
+    alo: 85,
+    ahi: 145,
+    sd: 4,
+    hazard: "Gravity fields",
+    why: "Fluid redistribution in microgravity alters systemic vascular resistance. Persistently elevated pressure increases long-term cardiovascular and ocular strain.",
+    action: "Rest seated calmly for 5 minutes and repeat measurement. Check dietary sodium intake and review countermeasure logs.",
+  },
+  glucose: {
+    label: "Blood sugar",
+    short: "GLU",
+    unit: "mg/dL",
+    dp: 0,
+    base: 92,
+    lo: 70,
+    hi: 110,
+    alo: 60,
+    ahi: 140,
+    sd: 5,
+    hazard: "Hostile and closed environment",
+    why: "Spaceflight altered metabolism, dietary limitations, and confinement stress can induce insulin resistance and glucose dysregulation.",
+    action: "Review caloric log and meal schedule. Hydrate adequately, adjust carbohydrate intake in the next meal ration, and re-test before bedtime.",
+  },
+  temp: {
+    label: "Body temperature",
+    short: "TEMP",
+    unit: "C",
+    dp: 2,
+    base: 36.7,
+    lo: 36.1,
+    hi: 37.2,
+    alo: 35.5,
+    ahi: 38.0,
+    sd: 0.15,
+    hazard: "Hostile and closed environment",
+    why: "Cabin thermal regulation, closed atmospheric loops, and altered immune response can cause sub-clinical fever or low-grade infection.",
+    action: "Check environmental control life support system cabin temperature, inspect clothing, rest, and repeat measurement in 60 minutes.",
+  },
+  sleep: {
+    label: "Sleep",
+    short: "SLEEP",
+    unit: "hours",
+    dp: 1,
+    base: 7.8,
+    lo: 6.5,
+    hi: 9.0,
+    alo: 4.5,
+    ahi: 11.0,
+    sd: 0.5,
+    hazard: "Isolation and confinement",
+    why: "Disrupted circadian rhythms, spacecraft ambient acoustic noise, and confinement diminish deep sleep phases, impairing cognitive readiness and immune resilience.",
+    action: "Enforce strict sleep hygiene: dim crew quarters lighting 60 minutes before scheduled sleep, use noise-canceling earplugs, and verify circadian lighting schedule.",
+  },
+  mood: {
+    label: "Mood (1 to 10)",
+    short: "MOOD",
+    unit: "/10",
+    dp: 1,
+    base: 7.5,
+    lo: 6.0,
+    hi: 10.0,
+    alo: 3.5,
+    ahi: 11.0,
+    sd: 0.6,
+    hazard: "Isolation and confinement",
+    why: "Prolonged mission isolation, sensory monotony, and distance from Earth create cumulative psychological strain and interpersonal fatigue.",
+    action: "Initiate private communication with family or ground psychological support. Schedule leisure time, listen to music, or speak with a crewmate.",
+  },
 };
 
-// Two drifts are injected into the simulated mission.
-export const EVENTS: { name: string; start: number; keys: Key[] }[] = [
-  { name: "Sleep and mood decline (isolation)", start: 30, keys: ["sleep", "mood"] },
-  { name: "Blood pressure and heart rate rise (gravity)", start: 55, keys: ["bp", "hr"] },
+// ---------- Simulated mission ----------
+
+export type MissionEvent = {
+  id: string;
+  name: string;
+  hazard: string;
+  start: number;
+  rise: number;
+  hold: number;
+  fall: number; // days
+  delta: Partial<Record<Key, number>>; // peak shift added to healthy value
+};
+
+// Three realistic drifts injected across the 180-day mission.
+export const EVENTS: MissionEvent[] = [
+  {
+    id: "isolation",
+    name: "Circadian disruption and mood decline",
+    hazard: "Isolation and confinement",
+    start: 40,
+    rise: 45,
+    hold: 20,
+    fall: 25,
+    delta: { sleep: -2.3, mood: -2.8 },
+  },
+  {
+    id: "gravity",
+    name: "Microgravity fluid shift and cardiovascular deconditioning",
+    hazard: "Gravity fields",
+    start: 95,
+    rise: 40,
+    hold: 15,
+    fall: 20,
+    delta: { bp: 26, hr: 14 },
+  },
+  {
+    id: "closed",
+    name: "Cabin atmospheric and metabolic stress",
+    hazard: "Hostile and closed environment",
+    start: 140,
+    rise: 25,
+    hold: 15,
+    fall: 15,
+    delta: { temp: 0.9, glucose: 22 },
+  },
 ];
+
+const GRACE = 7; // grace period after event ends before considering days quiet again
+export const eventEnd = (e: MissionEvent) => e.start + e.rise + e.hold + e.fall;
+
+const ramp = (d: number, s: number, len: number) =>
+  len <= 0 ? (d >= s ? 1 : 0) : Math.min(1, Math.max(0, (d - s) / len));
+
+export const effect = (e: MissionEvent, day: number) =>
+  ramp(day, e.start, e.rise) * (1 - ramp(day, e.start + e.rise + e.hold, e.fall));
 
 function rng(seed: number) {
   return () => {
@@ -51,27 +187,32 @@ function rng(seed: number) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
-const rd = (x: number, n = 1) => Math.round(x * 10 ** n) / 10 ** n;
-const ramp = (day: number, start: number, len: number) => Math.min(1, Math.max(0, (day - start) / len));
 
-export function simulate(days = 90, seed = 7): Day[] {
+const round = (x: number, n: number) => Math.round(x * 10 ** n) / 10 ** n;
+
+export function simulate(days = MISSION_DAYS, seed = 5): Day[] {
   const r = rng(seed);
-  const g = () => Math.sqrt(-2 * Math.log(1 - r())) * Math.cos(2 * Math.PI * r());
+  const gauss = () =>
+    Math.sqrt(-2 * Math.log(1 - r())) * Math.cos(2 * Math.PI * r());
+  const PHI = 0.3; // autoregressive correlation for realistic physiological continuity
+  const noise = {} as Record<Key, number>;
+  for (const k of KEYS) noise[k] = 0;
+
   return Array.from({ length: days }, (_, i) => {
     const day = i + 1;
-    const s = ramp(day, EVENTS[0].start, 25);
-    const c = ramp(day, EVENTS[1].start, 25);
-    return {
-      day,
-      hr: rd(68 + 3 * g() + 12 * c),
-      bp: rd(112 + 4 * g() + 24 * c),
-      glucose: rd(92 + 5 * g()),
-      temp: rd(36.7 + 0.15 * g(), 2),
-      sleep: rd(7.4 + 0.5 * g() - 2.2 * s),
-      mood: rd(Math.min(10, Math.max(1, 7.5 + 0.6 * g() - 2.5 * s))),
-    };
+    const row = { day } as Day;
+    for (const k of KEYS) {
+      noise[k] = PHI * noise[k] + Math.sqrt(1 - PHI * PHI) * gauss();
+      let v = I[k].base + I[k].sd * noise[k];
+      for (const e of EVENTS) v += (e.delta[k] ?? 0) * effect(e, day);
+      if (k === "mood") v = Math.min(10, Math.max(1, v));
+      row[k] = round(Math.max(0, v), I[k].dp);
+    }
+    return row;
   });
 }
+
+// ---------- Anomaly Detection & Baseline Engine ----------
 
 export function fixedStatus(k: Key, v: number): Status {
   const r = I[k];
@@ -80,55 +221,239 @@ export function fixedStatus(k: Key, v: number): Status {
   return "ok";
 }
 
-// Personal baseline from the first CAL days, then an EWMA of the z-score.
+export type Baseline = {
+  mu: number;
+  sd: number;
+  series: number[]; // series[i] = baseline used for day index i
+};
+
+export type Z = Record<Key, number[]>;
+
+// Rolling personal baseline plus an EWMA of the z-score.
+// 1. Initial baseline mean (mu0) and variance (sd) learned during first CAL days.
+// 2. Daily z-score calculated: z = (reading - mu) / sd.
+// 3. EWMA filter smooths transient noise: ewma = ALPHA * z + (1 - ALPHA) * ewma.
+// 4. Baseline mean tracks gently (BASE_RATE) only during non-drift periods to avoid baseline absorption.
 export function analyze(data: Day[]) {
-  const z = {} as Record<Key, number[]>;
-  const base = {} as Record<Key, { mu: number; sd: number }>;
+  const z = {} as Z;
+  const base = {} as Record<Key, Baseline>;
+
   for (const k of KEYS) {
-    const v = data.slice(0, CAL).map((d) => d[k]);
-    const mu = v.reduce((a, b) => a + b, 0) / v.length;
-    const sd = Math.max(Math.sqrt(v.reduce((a, b) => a + (b - mu) ** 2, 0) / (v.length - 1)), I[k].sd * 0.7);
-    base[k] = { mu, sd };
+    const calData = data.slice(0, Math.min(CAL, data.length));
+    const vals = calData.map((d) => d[k]);
+    const mu0 = vals.reduce((a, b) => a + b, 0) / (vals.length || 1);
+    const sample =
+      vals.length > 1
+        ? Math.sqrt(
+            vals.reduce((a, b) => a + (b - mu0) ** 2, 0) / (vals.length - 1)
+          )
+        : I[k].sd;
+    const sd = Math.max(sample, I[k].sd);
+
+    let mu = mu0;
     let e = 0;
-    z[k] = data.map((d) => {
-      e = ALPHA * ((d[k] - mu) / sd) + (1 - ALPHA) * e;
+    const series: number[] = [];
+
+    z[k] = data.map((d, i) => {
+      series.push(mu);
+      const instantZ = (d[k] - mu) / sd;
+      e = ALPHA * instantZ + (1 - ALPHA) * e;
+      if (i >= CAL && Math.abs(e) <= Z_LIMIT * 0.4) {
+        mu += BASE_RATE * (d[k] - mu);
+      }
       return e;
     });
+
+    base[k] = { mu: mu0, sd, series };
   }
+
   return { z, base };
 }
 
-export function statusAt(data: Day[], z: Record<Key, number[]>, k: Key, i: number) {
-  const fs = fixedStatus(k, data[i][k]);
-  const drift = i >= CAL && Math.abs(z[k][i]) > Z_LIMIT;
-  const status: Status = fs === "alert" ? "alert" : fs === "watch" || drift ? "watch" : "ok";
-  return { status, drift };
+export function statusAt(data: Day[], z: Z, k: Key, i: number) {
+  const fixed = fixedStatus(k, data[i][k]);
+  const zz = i >= CAL ? Math.abs(z[k][i]) : 0;
+  const drift = zz > Z_LIMIT;
+  const status: Status =
+    fixed === "alert" || zz > Z_ALERT
+      ? "alert"
+      : fixed === "watch" || drift
+      ? "watch"
+      : "ok";
+  return { k, status, drift, fixed, z: z[k][i] };
 }
 
-function firstDay(data: Day[], start: number, test: (i: number) => boolean) {
-  for (let i = start - 1; i < data.length; i++) if (test(i)) return data[i].day;
+export const worst = (list: Status[]): Status =>
+  list.includes("alert") ? "alert" : list.includes("watch") ? "watch" : "ok";
+
+export function driftDays(z: Z, k: Key, i: number) {
+  let n = 0;
+  for (let j = i; j >= CAL && Math.abs(z[k][j]) > Z_LIMIT; j--) n++;
+  return n;
+}
+
+export type AlertText = {
+  k: Key;
+  status: Status;
+  what: string;
+  why: string;
+  action: string;
+  escalate: string;
+};
+
+// Every alert explicitly answers the four core spaceflight telemetry questions.
+export function buildAlert(
+  data: Day[],
+  z: Z,
+  base: Record<Key, Baseline>,
+  k: Key,
+  i: number
+): AlertText {
+  const info = I[k];
+  const s = statusAt(data, z, k, i);
+  const v = data[i][k];
+  const mu = base[k].series[i] ?? base[k].mu;
+  const delta = v - mu;
+  const pct = Math.round((Math.abs(delta) / (mu || 1)) * 100);
+  const days = driftDays(z, k, i);
+  const dir = delta >= 0 ? "elevated by" : "reduced by";
+  const range =
+    s.fixed === "ok"
+      ? "Currently within standard population bounds, but deviating significantly from your personal baseline."
+      : "Breached standard population clinical reference thresholds.";
+  const run =
+    days > 1
+      ? ` Anomaly detected for ${days} consecutive mission days.`
+      : " Initial drift event detected today.";
+
+  const what = `${info.label} is currently ${v.toFixed(info.dp)} ${info.unit}. Your calibrated baseline is ${mu.toFixed(info.dp)} ${info.unit} (${dir} ${Math.abs(delta).toFixed(info.dp)} ${info.unit}, ${pct}% shift). ${range}${run}`;
+
+  const why = `Hazard: ${info.hazard}. ${info.why}`;
+
+  const action = info.action;
+
+  const escalate =
+    s.status === "alert"
+      ? "Priority 1 Telemetry Alert: Contact the Flight Surgeon immediately during the next Deep Space Network communication window. Prepare the past 7 days of raw telemetry logs."
+      : days >= 5
+      ? `Persistent sub-clinical drift: Deviation has persisted for ${days} days. Log telemetry into the weekly medical conference pack and schedule a consultation with the Flight Surgeon.`
+      : "Nominal monitoring: Perform immediate inflight countermeasures, log rest cycle, and repeat measurement tomorrow. If drift persists past 3 consecutive days, escalate to Flight Surgeon.";
+
+  return { k, status: s.status, what, why, action, escalate };
+}
+
+// ---------- Validation Engine: Personal Baseline vs Fixed Thresholds ----------
+
+export type ValRow = {
+  k: Key;
+  event: string;
+  start: number;
+  baseline: number | null;
+  fixed: number | null;
+  earlier: number | null;
+};
+
+export type ValidationSummary = {
+  total: number;
+  caughtBaseline: number;
+  caughtFixed: number;
+  onlyBaseline: number;
+  meanEarlier: number;
+  quietDays: number;
+  baselineFlags: number;
+  fixedFlags: number;
+  baselineRate: number;
+  fixedRate: number;
+};
+
+export type ValidationResult = {
+  rows: ValRow[];
+  summary: ValidationSummary;
+};
+
+function firstDay(
+  data: Day[],
+  from: number,
+  to: number,
+  test: (i: number) => boolean
+) {
+  for (let i = from - 1; i < Math.min(to, data.length); i++) {
+    if (test(i)) return data[i].day;
+  }
   return null;
 }
 
-// Compare the personal baseline method with a fixed threshold on the injected drifts.
-export function validate(data: Day[], z: Record<Key, number[]>) {
-  return EVENTS.flatMap((ev) =>
-    ev.keys.map((k) => {
-      const baseline = firstDay(data, ev.start, (i) => i >= CAL && Math.abs(z[k][i]) > Z_LIMIT);
-      const fixed = firstDay(data, ev.start, (i) => fixedStatus(k, data[i][k]) !== "ok");
-      return { k, start: ev.start, baseline, fixed, earlier: baseline !== null && fixed !== null ? fixed - baseline : null };
+const quiet = (k: Key, day: number) =>
+  !EVENTS.some(
+    (e) =>
+      e.delta[k] !== undefined &&
+      day >= e.start &&
+      day <= eventEnd(e) + GRACE
+  );
+
+export function validate(data: Day[], z: Z): ValidationResult {
+  const rows: ValRow[] = EVENTS.flatMap((e) =>
+    (Object.keys(e.delta) as Key[]).map((k) => {
+      const end = eventEnd(e) + GRACE;
+      const baseline = firstDay(
+        data,
+        e.start,
+        end,
+        (i) => i >= CAL && Math.abs(z[k][i]) > Z_LIMIT
+      );
+      const fixed = firstDay(
+        data,
+        e.start,
+        end,
+        (i) => fixedStatus(k, data[i][k]) !== "ok"
+      );
+      return {
+        k,
+        event: e.name,
+        start: e.start,
+        baseline,
+        fixed,
+        earlier:
+          baseline !== null && fixed !== null ? fixed - baseline : null,
+      };
     })
   );
-}
 
-// Flags raised on quiet days (before the first drift starts).
-export function falseAlarms(data: Day[], z: Record<Key, number[]>) {
-  let b = 0, f = 0;
-  const end = EVENTS[0].start - 1;
-  for (let i = CAL; i < end; i++)
+  let qd = 0;
+  let b = 0;
+  let f = 0;
+
+  for (let i = CAL; i < data.length; i++) {
     for (const k of KEYS) {
-      if (Math.abs(z[k][i]) > Z_LIMIT) b++;
-      if (fixedStatus(k, data[i][k]) !== "ok") f++;
+      if (quiet(k, data[i].day)) {
+        qd++;
+        if (Math.abs(z[k][i]) > Z_LIMIT) b++;
+        if (fixedStatus(k, data[i][k]) !== "ok") f++;
+      }
     }
-  return { b, f, days: end - CAL };
+  }
+
+  const both = rows.filter((r) => r.earlier !== null);
+
+  return {
+    rows,
+    summary: {
+      total: rows.length,
+      caughtBaseline: rows.filter((r) => r.baseline !== null).length,
+      caughtFixed: rows.filter((r) => r.fixed !== null).length,
+      onlyBaseline: rows.filter(
+        (r) => r.baseline !== null && r.fixed === null
+      ).length,
+      meanEarlier: both.length
+        ? Math.round(
+            (both.reduce((a, r) => a + (r.earlier ?? 0), 0) / both.length) * 10
+          ) / 10
+        : 0,
+      quietDays: qd,
+      baselineFlags: b,
+      fixedFlags: f,
+      baselineRate: qd ? Math.round((b / qd) * 1000) / 10 : 0,
+      fixedRate: qd ? Math.round((f / qd) * 1000) / 10 : 0,
+    },
+  };
 }
