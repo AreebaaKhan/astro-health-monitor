@@ -38,7 +38,7 @@ Deadline: 15 Nov 2026, 11:59 PM. Work started about 3:15 PM. Target submit by 10
 
 ## Phase 4: README and polish
 - [ ] Layout readable on a laptop screen
-- [ ] README: problem, approach, how detection works, validation result, limits, sources, simulated data note
+- [x] README: problem, approach, how detection works, validation result, limits, sources, simulated data note
 
 ## Phase 5: Submission
 - [ ] Record demo (30 seconds or less) and upload to a public link

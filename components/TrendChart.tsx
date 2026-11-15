@@ -13,11 +13,11 @@ function Tip({ active, payload, info }: { active?: boolean; payload?: { payload?
   if (!active || !r) return null;
   const v = r.past ?? r.future;
   return (
-    <div className="rounded border border-sky-900 bg-[#050d22]/95 px-3 py-2 font-mono text-xs text-slate-200">
-      <div className="text-slate-400">DAY {r.day}</div>
+    <div className="rounded border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900">
+      <div className="text-slate-600">DAY {r.day}</div>
       <div>{v !== null && v.toFixed(info.dp)} {info.unit}</div>
-      {r.mu !== null && <div className="text-slate-400">baseline {r.mu.toFixed(info.dp)}</div>}
-      {r.flag !== null && <div className="text-amber-300">drift flagged</div>}
+      {r.mu !== null && <div className="text-slate-600">baseline {r.mu.toFixed(info.dp)}</div>}
+      {r.flag !== null && <div className="text-amber-700">drift flagged</div>}
     </div>
   );
 }
@@ -41,29 +41,29 @@ export default function TrendChart({ data, z, base, k, day, compact = false }: {
   const vals = data.map((d) => d[k]);
   const pad = (info.hi - info.lo) * 0.25;
   const domain: [number, number] = [
-    Math.floor((Math.min(...vals, info.lo) - pad) * 10) / 10,
-    Math.ceil((Math.max(...vals, info.hi) + pad) * 10) / 10,
+    Math.floor((Math.min(...vals, info.alo) - pad) * 10) / 10,
+    Math.ceil((Math.max(...vals, info.ahi) + pad) * 10) / 10,
   ];
-  const tag = (value: string, fill: string) => ({ value, position: "insideTopRight" as const, fill, fontSize: 10 });
+  const tag = (value: string, fill: string) => ({ value, position: "insideTopRight" as const, fill, fontSize: 13 });
 
   return (
     <div className={compact ? "h-36 w-full" : "h-72 w-full"}>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={rows} margin={{ top: 6, right: compact ? 6 : 16, left: 0, bottom: 0 }}>
-          <CartesianGrid stroke="#17305c" strokeDasharray="2 4" />
-          <XAxis dataKey="day" type="number" domain={[1, MISSION_DAYS]} ticks={compact ? [1, 90, 180] : [1, 30, 60, 90, 120, 150, 180]} stroke="#5b7aa8" tick={{ fontSize: compact ? 9 : 11 }} />
-          <YAxis domain={domain} stroke="#5b7aa8" tick={{ fontSize: compact ? 9 : 11 }} width={compact ? 32 : 44} />
+          <CartesianGrid stroke="#E2E8F0" strokeDasharray="2 4" />
+          <XAxis dataKey="day" type="number" domain={[1, MISSION_DAYS]} ticks={compact ? [1, 90, 180] : [1, 30, 60, 90, 120, 150, 180]} stroke="#475569" tick={{ fontSize: 13 }} />
+          <YAxis domain={domain} stroke="#475569" tick={{ fontSize: 13 }} width={compact ? 32 : 44} />
           <Tooltip content={<Tip info={info} />} />
-          <ReferenceArea y1={info.lo} y2={info.hi} fill="#38bdf8" fillOpacity={0.07} ifOverflow="hidden" />
-          <ReferenceLine y={info.lo} stroke="#f6c177" strokeDasharray="5 4" ifOverflow="hidden" label={compact ? undefined : tag("fixed low", "#f6c177")} />
-          <ReferenceLine y={info.hi} stroke="#f6c177" strokeDasharray="5 4" ifOverflow="hidden" label={compact ? undefined : tag("fixed high", "#f6c177")} />
+          <ReferenceArea y1={info.lo} y2={info.hi} fill="#16A34A" fillOpacity={0.07} ifOverflow="hidden" />
+          <ReferenceLine y={info.lo} stroke="#16A34A" strokeDasharray="5 4" ifOverflow="hidden" label={compact ? undefined : tag("normal low", "#16A34A")} />
+          <ReferenceLine y={info.hi} stroke="#16A34A" strokeDasharray="5 4" ifOverflow="hidden" label={compact ? undefined : tag("normal high", "#16A34A")} />
           <ReferenceLine y={info.alo} stroke={PEACH} strokeDasharray="2 3" ifOverflow="hidden" />
           <ReferenceLine y={info.ahi} stroke={PEACH} strokeDasharray="2 3" ifOverflow="hidden" />
           <ReferenceLine x={day} stroke={ACCENT} />
-          <Line dataKey="future" stroke="#3b5380" strokeWidth={1.5} dot={false} isAnimationActive={false} />
+          <Line dataKey="future" stroke="#CBD5E1" strokeWidth={1.5} dot={false} isAnimationActive={false} />
           <Line dataKey="mu" stroke={ACCENT} strokeWidth={1.5} strokeDasharray="4 3" dot={false} isAnimationActive={false} />
-          <Line dataKey="past" stroke="#e2e8f0" strokeWidth={compact ? 1.5 : 2} dot={false} isAnimationActive={false} />
-          <Line dataKey="flag" stroke="none" dot={{ r: compact ? 2.5 : 3.5, fill: "#f6c177", stroke: "#0b1220", strokeWidth: 1 }} activeDot={false} isAnimationActive={false} />
+          <Line dataKey="past" stroke="#334155" strokeWidth={compact ? 1.5 : 2} dot={false} isAnimationActive={false} />
+          <Line dataKey="flag" stroke="none" dot={{ r: compact ? 2.5 : 3.5, fill: "#D97706", stroke: "#ffffff", strokeWidth: 1 }} activeDot={false} isAnimationActive={false} />
         </LineChart>
       </ResponsiveContainer>
     </div>

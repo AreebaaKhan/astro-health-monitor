@@ -57,7 +57,7 @@ export default function BodyFigure({ selected, statusOf, onSelect }: Props) {
   const act = (id: string) => ({
     onClick: () => onSelect(selected === id ? null : id),
     onKeyDown: (e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") onSelect(selected === id ? null : id); },
-    role: "button" as const, tabIndex: 0, className: "cursor-pointer outline-none",
+    role: "button" as const, tabIndex: 0, className: "cursor-pointer focus-visible:outline-blue-600",
   });
   const on = (id: string) => selected === id;
   const hint = (id: string) => REGIONS.find((r) => r.id === id)?.label;
@@ -68,7 +68,7 @@ export default function BodyFigure({ selected, statusOf, onSelect }: Props) {
     <svg viewBox="0 0 520 540" className="mx-auto h-full w-full" aria-label="Clickable hologram body figure">
       <defs>
         <filter id="hb-glow" x="-30%" y="-30%" width="160%" height="160%">
-          <feGaussianBlur stdDeviation="3" result="b" />
+          <feGaussianBlur stdDeviation="0.6" result="b" />
           <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
         </filter>
         <linearGradient id="hb-fill" x1="0" y1="0" x2="0" y2="1">
@@ -119,16 +119,16 @@ export default function BodyFigure({ selected, statusOf, onSelect }: Props) {
             <circle cx={x} cy={c.y} r={sel ? 12 : 8} fill={color} opacity="0.25">
               <animate attributeName="r" values={sel ? "9;15;9" : "6;10;6"} dur="2.4s" repeatCount="indefinite" />
             </circle>
-            <circle cx={x} cy={c.y} r="4.5" fill={color} stroke="#02050f" strokeWidth="1.5" filter="url(#hb-glow)" />
-            <text x={right ? x2 + 8 : x2 - 8} y={c.y + 4} textAnchor={right ? "start" : "end"} fontSize="12" letterSpacing="2"
-              fontFamily="ui-monospace, monospace" fill={sel ? ACCENT : "#cbd5e1"}>{c.label}</text>
+            <circle cx={x} cy={c.y} r="4.5" fill={color} stroke="#ffffff" strokeWidth="1.5" filter="url(#hb-glow)" />
+            <text x={right ? x2 + 8 : x2 - 8} y={c.y + 4} textAnchor={right ? "start" : "end"} fontSize="14" letterSpacing="0"
+              fontFamily="Arial, sans-serif" fill={sel ? ACCENT : "#475569"}>{c.label}</text>
           </g>
         );
       })}
 
       <g {...act("radiation")}>
-        <circle cx="108" cy="420" r="4.5" fill={on("radiation") ? ACCENT : "#94a3b8"} stroke="#02050f" strokeWidth="1.5" filter="url(#hb-glow)" />
-        <text x="96" y="424" textAnchor="end" fontSize="12" letterSpacing="2" fontFamily="ui-monospace, monospace" fill={on("radiation") ? ACCENT : "#cbd5e1"}>RADIATION</text>
+        <circle cx="108" cy="420" r="4.5" fill={on("radiation") ? ACCENT : "#94a3b8"} stroke="#ffffff" strokeWidth="1.5" filter="url(#hb-glow)" />
+        <text x="96" y="424" textAnchor="end" fontSize="14" letterSpacing="0" fontFamily="Arial, sans-serif" fill={on("radiation") ? ACCENT : "#475569"}>RADIATION</text>
       </g>
     </svg>
   );

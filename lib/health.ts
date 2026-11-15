@@ -43,8 +43,8 @@ export const I: Record<Key, Info> = {
     ahi: 110,
     sd: 3,
     hazard: "Gravity fields",
-    why: "Long periods in microgravity cause cephalad fluid shifts and cardiovascular deconditioning. A rising resting pulse indicates autonomic strain before clinical tachycardia appears.",
-    action: "Rest, hydrate with electrolyte solution, and repeat measurement after 10 minutes. Ensure daily prescribed aerobic exercise on the cycle ergometer is completed.",
+    why: "Changes in gravity can affect the heart and circulation. A lasting change in resting pulse is worth reviewing.",
+    action: "Rest quietly and repeat the measurement. Follow your prescribed hydration and activity plan.",
   },
   bp: {
     label: "Blood pressure (systolic)",
@@ -58,8 +58,8 @@ export const I: Record<Key, Info> = {
     ahi: 145,
     sd: 4,
     hazard: "Gravity fields",
-    why: "Fluid redistribution in microgravity alters systemic vascular resistance. Persistently elevated pressure increases long-term cardiovascular and ocular strain.",
-    action: "Rest seated calmly for 5 minutes and repeat measurement. Check dietary sodium intake and review countermeasure logs.",
+    why: "Changes in gravity redistribute body fluids. Blood pressure helps track changes in circulation.",
+    action: "Sit quietly for 5 minutes, check the cuff placement, and repeat the measurement.",
   },
   glucose: {
     label: "Blood sugar",
@@ -73,8 +73,8 @@ export const I: Record<Key, Info> = {
     ahi: 140,
     sd: 5,
     hazard: "Hostile and closed environment",
-    why: "Spaceflight altered metabolism, dietary limitations, and confinement stress can induce insulin resistance and glucose dysregulation.",
-    action: "Review caloric log and meal schedule. Hydrate adequately, adjust carbohydrate intake in the next meal ration, and re-test before bedtime.",
+    why: "Changes in food, activity and stress can affect blood sugar.",
+    action: "Check when you last ate and repeat the reading using your mission protocol. Do not change medication based on this app.",
   },
   temp: {
     label: "Body temperature",
@@ -88,8 +88,8 @@ export const I: Record<Key, Info> = {
     ahi: 38.0,
     sd: 0.15,
     hazard: "Hostile and closed environment",
-    why: "Cabin thermal regulation, closed atmospheric loops, and altered immune response can cause sub-clinical fever or low-grade infection.",
-    action: "Check environmental control life support system cabin temperature, inspect clothing, rest, and repeat measurement in 60 minutes.",
+    why: "Cabin conditions and illness can affect body temperature.",
+    action: "Check the thermometer and cabin conditions, then repeat the reading according to your mission protocol.",
   },
   sleep: {
     label: "Sleep",
@@ -103,8 +103,8 @@ export const I: Record<Key, Info> = {
     ahi: 11.0,
     sd: 0.5,
     hazard: "Isolation and confinement",
-    why: "Disrupted circadian rhythms, spacecraft ambient acoustic noise, and confinement diminish deep sleep phases, impairing cognitive readiness and immune resilience.",
-    action: "Enforce strict sleep hygiene: dim crew quarters lighting 60 minutes before scheduled sleep, use noise-canceling earplugs, and verify circadian lighting schedule.",
+    why: "Noise, lighting and isolation can disrupt sleep and make concentration harder.",
+    action: "Keep a regular sleep schedule. Reduce light and noise before rest and record how you feel.",
   },
   mood: {
     label: "Mood (1 to 10)",
@@ -118,8 +118,8 @@ export const I: Record<Key, Info> = {
     ahi: 11.0,
     sd: 0.6,
     hazard: "Isolation and confinement",
-    why: "Prolonged mission isolation, sensory monotony, and distance from Earth create cumulative psychological strain and interpersonal fatigue.",
-    action: "Initiate private communication with family or ground psychological support. Schedule leisure time, listen to music, or speak with a crewmate.",
+    why: "Isolation and distance from home can affect mood and wellbeing.",
+    action: "Take a break and talk with a trusted crewmate or your ground support team.",
   },
 };
 
@@ -313,31 +313,18 @@ export function buildAlert(
   const s = statusAt(data, z, k, i);
   const v = data[i][k];
   const mu = base[k].series[i] ?? base[k].mu;
-  const delta = v - mu;
-  const pct = Math.round((Math.abs(delta) / (mu || 1)) * 100);
   const days = driftDays(z, k, i);
-  const dir = delta >= 0 ? "elevated by" : "reduced by";
-  const range =
-    s.fixed === "ok"
-      ? "Currently within standard population bounds, but deviating significantly from your personal baseline."
-      : "Breached standard population clinical reference thresholds.";
-  const run =
-    days > 1
-      ? ` Anomaly detected for ${days} consecutive mission days.`
-      : " Initial drift event detected today.";
-
-  const what = `${info.label} is currently ${v.toFixed(info.dp)} ${info.unit}. Your calibrated baseline is ${mu.toFixed(info.dp)} ${info.unit} (${dir} ${Math.abs(delta).toFixed(info.dp)} ${info.unit}, ${pct}% shift). ${range}${run}`;
-
-  const why = `Hazard: ${info.hazard}. ${info.why}`;
-
+  const learning = i < CAL;
+  const what = learning
+    ? `${info.label}: ${v.toFixed(info.dp)} ${info.unit}. Outside the demo reference range; personal baseline is still learning.`
+    : `${info.label}: ${v.toFixed(info.dp)} ${info.unit}, compared with your baseline of ${mu.toFixed(info.dp)} ${info.unit}.${s.drift ? ` Trend flagged${days > 1 ? ` for ${days} days` : " today"}.` : " Outside the demo reference range."}`;
+  const why = `Spaceflight hazard: ${info.hazard}. ${info.why}`;
   const action = info.action;
-
-  const escalate =
-    s.status === "alert"
-      ? "Priority 1 Telemetry Alert: Contact the Flight Surgeon immediately during the next Deep Space Network communication window. Prepare the past 7 days of raw telemetry logs."
-      : days >= 5
-      ? `Persistent sub-clinical drift: Deviation has persisted for ${days} days. Log telemetry into the weekly medical conference pack and schedule a consultation with the Flight Surgeon.`
-      : "Nominal monitoring: Perform immediate inflight countermeasures, log rest cycle, and repeat measurement tomorrow. If drift persists past 3 consecutive days, escalate to Flight Surgeon.";
+  const escalate = s.status === "alert"
+    ? "Contact the flight surgeon promptly and follow your mission medical protocol. Do not wait for another app reading if you feel unwell."
+    : days >= 3
+    ? "This trend has continued for 3 or more days. Share your recent readings with the flight surgeon."
+    : "Repeat the measurement. Contact the flight surgeon if it stays unusual or you feel unwell.";
 
   return { k, status: s.status, what, why, action, escalate };
 }

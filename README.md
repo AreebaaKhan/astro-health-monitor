@@ -1,151 +1,82 @@
-# Astronaut Health Monitor
+﻿# AstroHealth
 
-Autonomous biometric telemetry and personal baseline anomaly detection for long-duration space missions.
+A health monitoring prototype for astronauts on long missions. Track six indicators, notice changes from a personal baseline, and get clear next steps to discuss with a flight surgeon.
 
-Submitted to the **2026 NASA Space Apps Challenge**  
-**Challenge:** Create Health Monitoring Software for Astronauts on Space Missions  
-**Difficulty:** Intermediate | **Track:** Human Exploration & Software  
+Built for the 2026 NASA Space Apps Challenge: **Create Health Monitoring Software for Astronauts on Space Missions**.
 
----
+## What works
 
-## Overview
+- Home: rotating Earth, mission timeline, indicator markers, trends and short alerts.
+- Check-in: enter heart rate, systolic blood pressure, blood sugar, temperature, sleep and mood. Entries save in this browser using localStorage. Saving again on the same date updates that entry; a new date adds an entry.
+- A separate 30-day sample history lets judges try the check-in without replacing saved entries. Sample data is labelled and lasts only while the Check-in tab is mounted.
+- Vitals: charts, personal baseline, reference band, drift markers and alert limits.
+- Body: interactive regions connected to indicators and NASA spaceflight hazards.
+- Validation: a reproducible 40-mission benchmark and the selected demo mission's individual results.
+- Copy a check-in summary for review before sharing with a flight surgeon.
 
-During long-duration missions (such as an Earth-Mars transit spanning 180 days or lunar surface stays under the Artemis program), astronauts face the **Five Hazards of Human Spaceflight** mapped by NASA's Human Research Program (HRP):
+## How detection works
 
-1. **Space Radiation:** Deep space galactic cosmic rays and solar particle events
-2. **Isolation and Confinement:** Disrupted circadian rhythms, sensory monotony, and psychological stress
-3. **Distance from Earth:** Communication delays up to 22 minutes each way, precluding real-time emergency guidance from ground flight surgeons
-4. **Gravity Fields:** Microgravity cephalad fluid shifts, cardiovascular deconditioning, bone loss, and muscle atrophy
-5. **Hostile Closed Environments:** Recycled atmosphere, cabin acoustics, limited nutrition, and microbial shifts
+The simulator generates 180 days with three injected events affecting six indicator series. This is synthetic data, not a NASA patient dataset.
 
-Because communication with Earth is delayed, astronauts must independently monitor their own health, spot sub-clinical physiological drift early, and initiate countermeasures before issues escalate.
+The first 14 entries establish each indicator's mean and standard deviation. An exponentially weighted moving average (EWMA, alpha 0.25) smooths the reading's z-score. The personal mean adjusts slowly (rate 0.005) during quiet periods and pauses during drift. A smoothed absolute z-score above 1.2 flags Watch; above 3.5 flags Alert. Fixed demo ranges also contribute to the displayed status.
 
----
+Check-in uses the same detection engine. During its first 14 entries, only fixed reference ranges determine status. Personal drift detection starts at entry 15. Missing calendar days are not filled in: this prototype treats each saved entry as one observation, so regular daily input is important.
 
-## The Core Problem with Standard Medical Thresholds
+## Reproducible validation
 
-Conventional clinical monitoring relies on fixed, population-wide normal ranges (for example: Resting Heart Rate 55 to 95 bpm, Blood Pressure systolic 95 to 125 mmHg, Sleep 6.5 to 9.0 hours).
+The benchmark runs seeds **1 through 40**, each for 180 days, using the same scenario and thresholds. Run `node scripts/verify-health.cjs` to reproduce it and verify check-in behavior.
 
-In spaceflight, these static thresholds create two dangerous failure modes:
-1. **Missed Sub-Clinical Drift:** An athletic astronaut with a healthy pre-mission resting heart rate of 68 bpm who experiences cardiovascular deconditioning up to 82 bpm is experiencing significant autonomic strain (+4.6 standard deviations). Yet conventional hospital triage flags this as completely normal because 82 bpm is below the 95 bpm population ceiling.
-2. **Spurious False Alarms:** A single noisy night with 6.4 hours of sleep or a transient blood pressure spike trips population alarm bells, causing alert fatigue when no sustained physiological issue exists.
+| Measure | 40 missions | Selected demo (seed 5) |
+| --- | --- | --- |
+| Mean earlier detection | 4.7 days | 8.2 days |
+| Baseline drifts caught | 240 / 240 | 6 / 6 |
+| Fixed-range drifts caught | 200 / 240 | 5 / 6 |
+| Quiet indicator-day flags, baseline | 4.2% | 5.1% |
+| Quiet indicator-day flags, fixed | 0.2% | 0.2% |
 
----
+Lead time includes only indicator drifts detected by both methods, then averages across missions. Negative lead times mean fixed ranges flagged first. Quiet-day rates pool indicator-days across missions and exclude injected-event windows plus a seven-day grace period. They count flagged days, not independent alert episodes.
 
-## Our Solution: Personalized Rolling Baseline Detection
+These results describe this synthetic scenario only. They are not clinical sensitivity or evidence of aerospace certification. Earlier detection comes with more quiet-day flags. The scenario ends at day 180, so later recovery phases are not fully observed.
 
-**Astronaut Health Monitor** establishes an individualized physiological baseline for each crew member and tracks slow drift over time using Exponentially Weighted Moving Average (EWMA) z-scores:
+## Sources and limits
 
-1. **Calibration Period:** During the first 14 mission days, the system learns the astronaut's unique mean ($\mu_0$) and standard deviation ($\sigma$) for each vital indicator.
-2. **Daily Z-Score Normalization:** Daily readings are converted to standardized deviations:
-   $$z_t = \frac{x_t - \mu_t}{\sigma}$$
-3. **EWMA Noise Filtering:** An exponential filter smooths day-to-day noise to prevent false alarms:
-   $$\bar{z}_t = \alpha \cdot z_t + (1 - \alpha) \cdot \bar{z}_{t-1}$$
-   *(with smoothing factor $\alpha = 0.25$)*
-4. **Adaptive Non-Absorbing Baseline:** The baseline mean tracks natural long-term changes very slowly ($\text{rate} = 0.005$) during confirmed quiet nominal phases, but freezes during active drift events to prevent "boiling the frog" (absorbing the pathological drift).
-5. **Two-Stage Telemetry Alerts:**
-   - **Caution (Watch):** $|\bar{z}_t| > 1.2$ flags slow, persistent drift days before any fixed limit is breached.
-   - **Critical Alert:** $|\bar{z}_t| > 3.5$ or breach of hard emergency limits triggers an immediate Flight Surgeon escalation protocol.
+NASA sources inform the hazard explanations, not the numerical demo limits:
 
----
+- [5 Hazards of Human Spaceflight](https://www.nasa.gov/hrp/hazards/)
+- [Risks of Human Spaceflight](https://www.nasa.gov/hrp/risks/)
+- [Ongoing HRP Research](https://www.nasa.gov/hrp/ongoing-hrp-research/)
 
-## Validation: Baseline Detection vs Fixed Thresholds
+The five hazards are radiation, isolation and confinement, distance from Earth, gravity fields, and hostile or closed environments. The six indicators do not directly measure radiation exposure. The Earth texture is bundled locally in `public/earth.jpg`; the app no longer depends on remote Wikimedia photo requests.
 
-Tested across a 180-day simulated Mars transit mission with three realistic spaceflight hazard events injected into the telemetry:
+Reference ranges are illustrative adult demo values in `lib/health.ts`, not verified NASA operational thresholds. Blood pressure records systolic pressure only. Blood sugar interpretation depends on measurement timing, which is not modelled here. The initial baseline assumes representative readings. No real astronaut dataset or clinical study was used.
 
-| Indicator | Injected Spaceflight Hazard Event | Onset | Baseline Method Flags | Fixed Threshold Flags | Early Warning Advantage |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Sleep** | Circadian disruption & isolation | Day 40 | Day 51 | Day 61 | **+10 Days earlier** |
-| **Mood** | Confinement & sensory monotony | Day 40 | Day 41 | Day 62 | **+21 Days earlier** |
-| **Systolic BP** | Cephalad fluid shift & vascular deconditioning | Day 95 | Day 113 | Day 115 | **+2 Days earlier** |
-| **Heart Rate** | Microgravity cardiac deconditioning | Day 95 | Day 103 | Never breached | **Caught only by baseline** |
-| **Body Temp** | Cabin environment & low-grade immune shift | Day 140 | Day 147 | Day 151 | **+4 Days earlier** |
-| **Blood Sugar** | Metabolic stress & space nutrition | Day 140 | Day 149 | Day 153 | **+4 Days earlier** |
+This app provides guidance only, not diagnosis or treatment. Follow mission medical protocols and contact qualified medical support when appropriate. Local storage is not encrypted or synchronized and is not suitable for real sensitive health records on a shared device. No account, database or external medical-data transmission is implemented.
 
-### Quantifiable Results
-- **Mean Early Detection Advantage:** +8.2 Days on average across all detected events.
-- **Drift Detection Sensitivity:** 100% (6 out of 6 injected physiological drifts detected).
-- **Sub-Clinical Blindspot Capture:** 1 vital (Resting Heart Rate) was caught on Day 103 by the personal baseline, while fixed hospital ranges missed it entirely.
-- **Quiet Period False Alarm Rate:** 3.6% for the baseline method (well within aerospace telemetry tolerance) versus 0.4% for fixed limits.
+## Run locally
 
----
+Use Node.js 20.9+ (Node 24 was used for checks), with npm installed:
 
-## Actionable 4-Part Telemetry Alerts
-
-Every triggered warning answers four questions in plain English:
-1. **What Changed?** Telemetry value, personal baseline comparison, percentage shift, and consecutive days flagged.
-2. **Why It Matters in Space:** Direct link to the active NASA spaceflight hazard and underlying microgravity physiological mechanism.
-3. **What to Do Now:** Practical inflight countermeasures (cycle ergometer exertion, hydration with electrolytes, lower body negative pressure, circadian light adjustment, sleep quarters noise reduction).
-4. **When to Escalate:** Clear operational thresholds for when to notify ground flight surgeons in Mission Control via the Deep Space Network.
-
----
-
-## Features
-
-- **Aerospace Mission Telemetry HUD:** Clean, dark-mode cockpit interface with live Mission Elapsed Time (MET) counter, crew profile, and overall system status.
-- **180-Day Mission Scrubber:** Interactive timeline slider with Play/Pause simulation playback and quick jump bookmarks to critical mission phases.
-- **Six Core Biometric Indicators:** Heart rate, systolic blood pressure, blood glucose, body temperature, daily sleep hours, and mood score.
-- **Interactive Telemetry Trend Chart:** Recharts visualization showing population normal bounds, personal baseline curves, actual readings, baseline drift markers, and fixed limit violations.
-- **Interactive 2D Body Figure Schematic:** Clickable anatomical model mapping cranial, thoracic, abdominal, and systemic body regions to their corresponding NASA hazards and countermeasures.
-- **Empirical Validation Table:** Interactive panel displaying head-to-head detection metrics.
-- **Manual Crew Check-in:** Inflight logging modal allowing crew or judges to enter custom vitals and immediately observe real-time algorithm response.
-- **Flight Surgeon Telemetry Brief:** One-click structured medical summary formatted for transmission to Earth.
-
----
-
-## Technology Stack
-
-- **Framework:** Next.js (App Router)
-- **Language:** TypeScript
-- **Styling:** Tailwind CSS (Dark aerospace telemetry theme)
-- **Charting:** Recharts
-- **Architecture:** Pure client-side application. Core mathematical logic isolated in `/lib/health.ts` without UI dependencies.
-
----
-
-## Getting Started
-
-### Prerequisites
-- Node.js 18.18 or higher (Node 20+ recommended)
-- npm, pnpm, or yarn
-
-### Installation
-
-```bash
-git clone https://github.com/masha/astro-health-monitor.git
-cd astro-health-monitor
-npm install
+```powershell
+npm.cmd install
+npm.cmd run dev
 ```
 
-### Run Locally
+Open http://localhost:3000. To verify and build:
 
-```bash
-npm run dev
+```powershell
+node scripts/verify-health.cjs
+npm.cmd run lint
+npm.cmd run build
+npm.cmd run start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Stack: Next.js App Router, TypeScript, Tailwind CSS and Recharts. Detection and validation logic live in `/lib`, UI in `/components` and `/app`.
 
-### Production Build
+## 30-second demo outline
 
-```bash
-npm run build
-npm run start
-```
+1. Show the Earth and mission health overview.
+2. Open Check-in, choose the labelled 30-day sample, enter systolic BP 150 and save.
+3. Show the alert's next steps and the interactive Body tab.
+4. Finish on Validation: 4.7 days earlier across 40 synthetic missions, with the false-flag tradeoff visible.
 
----
-
-## Safety and Medical Notice
-
-All mission data is simulated for demonstration purposes. Reference ranges and risk models are compiled from NASA Human Research Program documents and standard aerospace medical literature.
-
-This software is an autonomous decision-support and self-assessment guidance tool for astronaut crew members on long missions. It does not provide medical diagnoses or replace a certified Flight Surgeon.
-
----
-
-## NASA Sources and References Cited
-
-1. NASA Human Research Program (HRP): *The Human Body in Space: The Five Hazards of Human Spaceflight*
-2. NASA HRP Evidence Report: *Risk of Adverse Health Consequences and Decreased Performance Due to Spaceflight-Induced Cardiovascular Alterations*
-3. NASA HRP Evidence Report: *Risk of Impaired Performance and Decreased Alertness Due to Sleep Loss, Circadian Misalignment, and Work Overload*
-4. NASA Standard Medical Operations: In-flight physiological monitoring parameters for ISS and Artemis crew missions
-5. Canadian Space Agency (CSA): *Operational Space Medicine & Radiation Health in Deep Space Exploration*
+AI tools assisted with code, interface revisions and writing. The team is responsible for reviewing the implementation and submission claims.
