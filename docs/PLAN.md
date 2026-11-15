@@ -42,7 +42,7 @@ Deadline: 15 Nov 2026, 11:59 PM. Work started about 3:15 PM. Target submit by 10
 
 ## Phase 5: Submission
 - [ ] Record demo (30 seconds or less) and upload to a public link
-- [ ] Write project summary
+- [x] Write project summary
 - [ ] Fill the submission page, tick the required agreement box, submit
 
 ## Cut list (cut from the top if time runs out)

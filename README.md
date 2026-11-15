@@ -1,4 +1,4 @@
-﻿# AstroHealth
+# AstroHealth
 
 A health monitoring prototype for astronauts on long missions. Track six indicators, notice changes from a personal baseline, and get clear next steps to discuss with a flight surgeon.
 
@@ -80,3 +80,7 @@ Stack: Next.js App Router, TypeScript, Tailwind CSS and Recharts. Detection and 
 4. Finish on Validation: 4.7 days earlier across 40 synthetic missions, with the false-flag tradeoff visible.
 
 AI tools assisted with code, interface revisions and writing. The team is responsible for reviewing the implementation and submission claims.
+
+## Submission preparation
+
+See [the submission kit](docs/SUBMISSION.md) for draft form text, deployment checks, a timed narration script and a seven-slide outline. AI assistance is also recorded in [project metadata](public/ai-assistance.json). Confirm the original source and usage rights of `public/earth.jpg` with the teammate before submitting its asset credit.

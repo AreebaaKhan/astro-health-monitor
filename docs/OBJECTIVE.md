@@ -25,14 +25,14 @@ A web app where an astronaut logs daily health indicators, sees trends with colo
 6. Measured result: on the simulated mission, compare our personal baseline method against fixed thresholds and show how many days earlier it flags a drift. This gives us a number for the Validity criterion, like an accuracy score in a data challenge.
 
 ## MVP (must ship)
-- [ ] Daily check-in form for the 6 indicators
-- [ ] Dashboard: one card per indicator with green/yellow/red status
-- [ ] Trend charts over time with anomaly points marked
-- [ ] Personal baseline anomaly detection in /lib (pure functions, easy to explain)
-- [ ] Clickable body figure that shows related indicators, hazards and advice
-- [ ] Alert panel with: what changed, why, what to do, when to escalate
-- [ ] Demo mode with the mission simulator
-- [ ] Validation panel: baseline method vs fixed thresholds (days earlier, false alarms)
+- [x] Daily check-in form for the 6 indicators
+- [x] Dashboard: one card per indicator with green/yellow/red status
+- [x] Trend charts over time with anomaly points marked
+- [x] Personal baseline anomaly detection in /lib (pure functions, easy to explain)
+- [x] Clickable body figure that shows related indicators, hazards and advice
+- [x] Alert panel with: what changed, why, what to do, when to escalate
+- [x] Demo mode with the mission simulator
+- [x] Validation panel: baseline method vs fixed thresholds (days earlier, false alarms)
 - [ ] Deployed live URL
 
 ## Stretch (only after MVP is done)

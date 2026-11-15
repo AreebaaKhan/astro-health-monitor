@@ -117,13 +117,13 @@ export default function Dashboard() {
   );
 
   const alertsPanel = (
-    <section className={`${tealCard} flex max-h-[600px] flex-col p-4 ${flagged.length ? GLOW[overall] : ""}`}>
+    <section className={`${tealCard} flex flex-col p-5 ${flagged.length ? GLOW[overall] : ""}`}>
       <div className="mb-1 flex items-center justify-between">
         <h2 className={`${head} ${TXT[overall]}`}>Alerts · day {day}</h2>
         <span className={`rounded-full border px-2 py-0.5 font-sans text-[13px] ${GLOW[overall]} ${TXT[overall]}`}>{flagged.length} flagged</span>
       </div>
-      <p className="mb-2 text-[13px] text-slate-600">Ground replies take time. Check yourself first, escalate early.</p>
-      <div className="app-scroll min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
+      <p className="mb-4 text-[13px] text-slate-600">Ground replies take time. Check yourself first, escalate early.</p>
+      <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
         {alerts.length === 0 && <p className="text-sm text-slate-600">All indicators are close to this astronaut&apos;s own baseline.</p>}
         {alerts.map((a) => {
           const rows: [string, string][] = [["What changed", a.what], ["What to do", a.action], ["When to escalate", a.escalate]];
@@ -144,13 +144,12 @@ export default function Dashboard() {
   );
 
   const home = (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_350px]">
-      <div className="space-y-4">
-        {/* Hero with Earth */}
+    <div className="space-y-5">
+      <div className="home-overview">
         <section className={`${card} mission-hero`}>
           <div className="hero-wash" />
           <div className="hero-heading">
-            <div className={head}>Crew health · live globe</div>
+            <div className={head}>Your health, beyond Earth</div>
             <div className="font-sans text-[13px] text-slate-600">Simulated Mars transit: select a vital to explore</div>
           </div>
 
@@ -211,9 +210,29 @@ export default function Dashboard() {
             <div className="min-w-0 flex-1">{scrub}</div>
           </div>
         </section>
+        <aside className="mission-side">
+          <section className={`${tealCard} overflow-hidden`}>
+          <div className="mission-illustration" aria-hidden="true" />
+          <div className="p-4">
+            <div className={head}>Mission clock</div>
+            <div className={`font-sans text-4xl font-semibold ${NUM.ok}`}>D+{pad(day)}</div>
+            <div className="mt-1 h-1.5 rounded-full bg-slate-100"><div className="h-full rounded-full bg-blue-600 shadow-sm" style={{ width: `${progress * 100}%` }} /></div>
+            <p className="mt-2 font-sans text-[13px] text-slate-600">Crew CDR-01 (simulated) · {pad((day - 1) * 24, 4)} h · Mars transit</p>
+            <p className="font-sans text-[13px] text-slate-600">Ground link delay: ~{delay} min (illustrative)</p>
+          </div>
+        </section>
 
-        {/* Bottom three cards */}
-        <div className="grid gap-4 md:grid-cols-3">
+        <section className={`${tealCard} overflow-hidden`}>
+          <div className="care-illustration" aria-hidden="true"><svg viewBox="0 0 300 50"><path d="M0 28 H75 L90 28 L101 15 L112 40 L127 5 L140 28 H180 L191 21 L202 28 H300" fill="none" stroke="currentColor" strokeWidth="2" /></svg></div>
+          <div className="p-4">
+            <div className={head}>Recommendation · {info.short}</div>
+            <p className="mt-1 text-sm text-slate-900">{sel.status === "ok" ? "Readings are close to your baseline. Keep up routine measurements and daily exercise." : info.action}</p>
+          </div>
+        </section>
+        </aside>
+      </div>
+      {alertsPanel}
+      <div className="grid gap-4 md:grid-cols-3">
           <section className={`${card} p-4`}>
             <div className="flex items-start justify-between">
               <h2 className={head}>{info.short} · last 12 days</h2>
@@ -232,7 +251,7 @@ export default function Dashboard() {
                   <li key={e.id} className="flex items-start gap-3">
                     <div className={`w-14 shrink-0 rounded-md border px-1.5 py-1 text-center font-sans text-[13px] ${active ? "border-amber-300/60 text-amber-700" : "border-slate-200 text-slate-600"}`}>D{e.start}</div>
                     <div className="min-w-0">
-                      <div className="truncate text-sm text-slate-900">{e.name}</div>
+                      <div className="text-sm text-slate-900">{e.name}</div>
                       <div className="font-sans text-[13px] text-slate-500">{e.hazard} · to D{eventEnd(e)}{active ? " · ACTIVE" : ""}</div>
                     </div>
                   </li>
@@ -261,31 +280,6 @@ export default function Dashboard() {
             <p className="mt-2 font-sans text-[13px] text-slate-500">Smoothed z-score. Caution above {Z_LIMIT}, alert above {Z_ALERT}.</p>
           </section>
         </div>
-      </div>
-
-      {/* Right column */}
-      <div className="space-y-4">
-        {alertsPanel}
-
-        <section className={`${tealCard} overflow-hidden`}>
-          <div className="mission-illustration" aria-hidden="true" />
-          <div className="p-4">
-            <div className={head}>Mission clock</div>
-            <div className={`font-sans text-4xl font-semibold ${NUM.ok}`}>D+{pad(day)}</div>
-            <div className="mt-1 h-1.5 rounded-full bg-slate-100"><div className="h-full rounded-full bg-blue-600 shadow-sm" style={{ width: `${progress * 100}%` }} /></div>
-            <p className="mt-2 font-sans text-[13px] text-slate-600">Crew CDR-01 (simulated) · {pad((day - 1) * 24, 4)} h · Mars transit</p>
-            <p className="font-sans text-[13px] text-slate-600">Ground link delay: ~{delay} min (illustrative)</p>
-          </div>
-        </section>
-
-        <section className={`${tealCard} overflow-hidden`}>
-          <div className="care-illustration" aria-hidden="true"><svg viewBox="0 0 300 50"><path d="M0 28 H75 L90 28 L101 15 L112 40 L127 5 L140 28 H180 L191 21 L202 28 H300" fill="none" stroke="currentColor" strokeWidth="2" /></svg></div>
-          <div className="p-4">
-            <div className={head}>Recommendation · {info.short}</div>
-            <p className="mt-1 text-sm text-slate-900">{sel.status === "ok" ? "Readings are close to your baseline. Keep up routine measurements and daily exercise." : info.action}</p>
-          </div>
-        </section>
-      </div>
     </div>
   );
 
@@ -428,9 +422,6 @@ export default function Dashboard() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#F6F8FB] text-slate-900">
 
-      <div className="pointer-events-none absolute -left-40 -top-40 h-[560px] w-[560px] rounded-full bg-cyan-500/10 blur-3xl" />
-      <div className="pointer-events-none absolute -right-32 top-1/3 h-[520px] w-[520px] rounded-full bg-teal-500/10 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-40 left-1/3 h-[460px] w-[460px] rounded-full bg-blue-700/15 blur-3xl" />
 
       <div className="relative mx-auto max-w-[1500px] space-y-6 p-4 md:p-7">
         <header className="flex flex-wrap items-center gap-4 px-2 py-1">

@@ -1,0 +1,10 @@
+﻿{
+  "project": "AstroHealth",
+  "ai_assistance": {
+    "tools": ["Claude", "OpenAI Codex"],
+    "uses": ["brainstorming and planning", "code generation and revision", "synthetic simulator implementation", "interface styling", "verification scripts", "documentation drafts"],
+    "health_data": "Mission readings are deterministic synthetic data, not NASA patient records.",
+    "detection": "Statistical EWMA baseline comparison, not a trained medical AI model."
+  },
+  "review": "The team is responsible for reviewing claims, limitations, media rights and submission declarations."
+}
