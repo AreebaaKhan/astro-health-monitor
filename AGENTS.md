@@ -1,9 +1,17 @@
-<!-- BEGIN:nextjs-agent-rules -->
+# Agent instructions
 
-## This is NOT the Next.js you know
+This repo is a NASA Space Apps 2026 entry: an astronaut health monitoring web app.
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+Before any work:
+1. Read docs/OBJECTIVE.md (what and why)
+2. Read docs/PLAN.md (task order)
+3. Read docs/HANDOFF.md (current status and rules)
 
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+After any work: update docs/HANDOFF.md (status, next action, one log line) and tick finished tasks in docs/PLAN.md.
 
-<!-- END:nextjs-agent-rules -->
+Conventions:
+- Next.js App Router, TypeScript, Tailwind, Recharts
+- Logic in /lib with no UI code. UI in /app and /components.
+- Keep changes small. Do not add dependencies or change scope without asking.
+- Plain, natural writing in README and UI text. No em dashes.
+- Anything medical is guidance only. Never present it as diagnosis.
